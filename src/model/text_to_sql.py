@@ -1,7 +1,7 @@
 from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, EarlyStoppingCallback
 from datasets import Dataset
 import torch
-from typing import List, Dict
+from typing import List, Dict, Union, Tuple
 from tqdm import tqdm
 from dataclasses import dataclass
 
@@ -51,10 +51,14 @@ class Text2SQL:
     def load_model_from_checkpoint(self, model_checkpoint: str):
         self.model, self.tokenizer, self.training_args = load_model_from_checkpoint(model_checkpoint)
 
-    def generate(self, questions: List[str], tables: List[Dict], max_new_tokens: int = GENERATION_MAX_LENGTH, num_beams=4, with_samples=False, verbose=0) -> List[str]:
+    def generate(self, questions: List[str],
+                 tables: List[Dict],
+                 max_new_tokens: int = GENERATION_MAX_LENGTH,
+                 num_beams=4, return_raw=False, with_samples=False, verbose=0) -> Union[List[str], Tuple[List[str], List[str]]]:
         # Preprocess questions (format prompts)
         processor = Processor(self.tokenizer, mode=self.mode, with_samples=with_samples)
-        formatted_questions = [processor.get_input_prompt({"question": q, "table": table}) for q, table in zip(questions, tables)]
+        formatted_questions = [processor.get_input_prompt({"question": q, "table": table}) for q, table in
+                               zip(questions, tables)]
 
         with torch.no_grad():
             model_inputs = self.tokenizer(formatted_questions, return_tensors="pt", truncation=True, padding=True,
@@ -63,6 +67,7 @@ class Text2SQL:
             preds = self.tokenizer.batch_decode(outputs_logits, skip_special_tokens=False)
 
         sanitized_preds = []
+        raw_preds = []
         sanitizer = SQLSanitizer()
         for raw_pred_str, table in zip(preds, tables):
             # Sanitizing prediction
@@ -78,6 +83,9 @@ class Text2SQL:
                 sanitized_query = sanitizer.sanitize(raw_pred_str, table, verbose=verbose)
 
             sanitized_preds.append(sanitized_query)
+            raw_preds.append(raw_pred_str)
+        if return_raw:
+            return sanitized_preds, raw_preds
         return sanitized_preds
 
 
@@ -100,7 +108,7 @@ class Text2SQLTrainer(Seq2SeqTrainer):
             # Per-batch generation
             with torch.no_grad():
                 model_inputs = self.tokenizer(prompts, return_tensors="pt", truncation=True, padding=True,
-                                         max_length=128).to(self.model.device)
+                                              max_length=128).to(self.model.device)
                 outputs = self.model.generate(**model_inputs, max_new_tokens=128, num_beams=4)
                 preds = self.tokenizer.batch_decode(outputs, skip_special_tokens=False)
 

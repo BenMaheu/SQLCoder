@@ -70,18 +70,24 @@ def main():
             st.warning("Ask a question before generating a query.")
         else:
             with st.spinner("Generating SQL query..."):
-                st.session_state["sql_query"] = text2sql_model.generate([user_question], [selected_table])[0]
+                sql_queries, raw_preds = text2sql_model.generate([user_question], [selected_table], return_raw=True)
+                st.session_state["sql_query"], st.session_state["raw_pred"] = sql_queries[0], raw_preds[0]
+
+    if "raw_pred" in st.session_state:
+        st.text_area("Raw model output:", st.session_state["raw_pred"])
 
     if "sql_query" in st.session_state:
+        st.text("Sanitized SQL query:")
         st.code(st.session_state["sql_query"], language="sql")
 
     if "sql_query" in st.session_state:
         # Exécution de la requête
-        if st.button("Run SQL query on db"):
+        if st.button("Run SQL query on db (test_sql_db)"):
             try:
                 results = run_sql_query(st.session_state["sql_query"], test_db_engine)
                 print("Results : ", results)
                 st.success("Query successfully run.")
+                st.text("Query Results:")
                 st.code(results, language="sql")
             except Exception as e:
                 st.error(f"Erreur lors de l'exécution de la requête : {e}")
