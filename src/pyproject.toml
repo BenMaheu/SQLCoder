@@ -6,7 +6,15 @@ authors = ["Ben Maheu <benjamin.maheu@student.ecp.fr>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.13"
+pandas = "^2.3.3"
+rouge-score = "^0.1.2"
+evaluate = "^0.4.6"
+transformers = "^4.57.1"
+sqlalchemy = "^2.0.44"
+matplotlib = "^3.10.7"
+sentencepiece = "^0.2.1"
+numpy = "1.26"
 
 
 [build-system]

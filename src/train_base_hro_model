@@ -1,0 +1,8 @@
+python train.py \
+  --model_name google/flan-t5-base \
+  --batch_size 16 \
+  --num_train_epochs 5 \
+  --generation_max_length 128 \
+  --metric_for_best_model rouge2 \
+  --mode human_readable_output \
+  --output_dir ./models/text2sql_hro_base
