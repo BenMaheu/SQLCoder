@@ -51,7 +51,7 @@ class Text2SQL:
     def load_model_from_checkpoint(self, model_checkpoint: str):
         self.model, self.tokenizer, self.training_args = load_model_from_checkpoint(model_checkpoint)
 
-    def generate(self, questions: List[str], tables: List[Dict], max_new_tokens: int = GENERATION_MAX_LENGTH, num_beams=4, with_samples=False) -> List[str]:
+    def generate(self, questions: List[str], tables: List[Dict], max_new_tokens: int = GENERATION_MAX_LENGTH, num_beams=4, with_samples=False, verbose=0) -> List[str]:
         # Preprocess questions (format prompts)
         processor = Processor(self.tokenizer, mode=self.mode, with_samples=with_samples)
         formatted_questions = [processor.get_input_prompt({"question": q, "table": table}) for q, table in zip(questions, tables)]
@@ -68,14 +68,14 @@ class Text2SQL:
             # Sanitizing prediction
             if self.mode == "structured_output":
                 try:
-                    sanitized_query = sanitizer.sanitize(extract_json(raw_pred_str), table)
+                    sanitized_query = sanitizer.sanitize(extract_json(raw_pred_str), table, verbose=verbose)
                 except:
                     try:
                         sanitized_query = extract_json(raw_pred_str)
                     except:
                         sanitized_query = raw_pred_str
             else:
-                sanitized_query = sanitizer.sanitize(raw_pred_str, table)
+                sanitized_query = sanitizer.sanitize(raw_pred_str, table, verbose=verbose)
 
             sanitized_preds.append(sanitized_query)
         return sanitized_preds

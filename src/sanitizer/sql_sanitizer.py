@@ -28,10 +28,10 @@ class SQLSanitizer:
         sql_query = strip_specials(sql_query)
         sql_query = sql_query.strip()
 
-        # Check if already sanitized :
-        if is_already_sanitized(sql_query, table):
-            print("Query is already sanitized. Skipping re-sanitization.")
-            return sql_query
+        # # Check if already sanitized :
+        # if is_already_sanitized(sql_query, table):
+        #     print("Query is already sanitized. Skipping re-sanitization.")
+        #     return sql_query
 
         if sql_query.endswith(";"):
             sql_query = sql_query[:-1]
@@ -192,11 +192,15 @@ def sanitize_where_conditions(where_clause: str, headers: List[str], fuzzymatch_
         if not (col.startswith("`") and col.endswith("`")):
             col = f"`{col}`"
 
-        # Detect string literal: quote if not number or already quoted
-        if not re.match(r'^[0-9.\-]+$', val):
-            if val.strip().startswith('"') and val.strip().endswith('"'):
-                val = val.strip()
-            else:
+        # Detect string literal: quote if not (number or already quoted)
+        # Detect if val looks like a numeric literal (int or float)
+        if re.match(r'^-?\d+(\.\d+)?$', val.strip()):
+            # It's a number, leave as is
+            pass
+        else:
+            # It's a string, ensure double quotes
+            val = val.strip()
+            if not (val.startswith('"') and val.endswith('"')):
                 val = f'"{val}"'
 
         sanitized_parts.append(f"{col} {op} {val}")
