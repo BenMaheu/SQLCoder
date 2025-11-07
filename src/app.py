@@ -63,7 +63,7 @@ def main():
 
     # User's question
     user_question = st.text_input("Ask a question :",
-                                  placeholder="Ex: What is terrence ross' nationality?, What clu was in toronto 1995-96?, Which club was in toronto 2003-06?")
+                                  placeholder="Ex: What clu was in toronto 1995-96?, What is terrence ross' nationality?, Which club was in toronto 2003-06?")
 
     if st.button("Generate SQL query"):
         if not user_question:
@@ -71,7 +71,9 @@ def main():
         else:
             with st.spinner("Generating SQL query..."):
                 st.session_state["sql_query"] = text2sql_model.generate([user_question], [selected_table])[0]
-            st.code(st.session_state["sql_query"], language="sql")
+
+    if "sql_query" in st.session_state:
+        st.code(st.session_state["sql_query"], language="sql")
 
     if "sql_query" in st.session_state:
         # Exécution de la requête
