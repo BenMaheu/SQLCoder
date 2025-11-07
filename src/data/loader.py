@@ -7,6 +7,7 @@ from datasets import Features, Value, Sequence, load_dataset
 
 
 def load_db_engines(sql_db_path: str = SQL_DB_PATH):
+    print("\n\t Loading SQL database engines...")
     # ------- TRAIN --------
     train_db_path = os.path.join(sql_db_path, "train.db")
     train_db_engine = create_engine(f"sqlite:///{train_db_path}")

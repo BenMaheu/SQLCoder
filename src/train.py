@@ -1,6 +1,7 @@
 import argparse
 from data.wiki_sql_loader import WikiSQLLoader
 from model.text_to_sql import Text2SQL, Text2SQLConfig, load_trainer
+from data.loader import load_db_engines
 from config import DATA_PATH
 
 
@@ -45,6 +46,10 @@ def main():
 
     # Evaluate
     trainer.evaluate(eval_dataset=test_data)
+
+    # Evaluate execution accuracy
+    train_db_engine, val_db_engine, test_db_engine = load_db_engines()
+    trainer.evaluate_execution_accuracy(test_data, test_db_engine, mode=text2sql_model.mode)
 
     # Save model
     trainer.save_model()

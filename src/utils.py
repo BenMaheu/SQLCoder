@@ -5,7 +5,7 @@ import json
 from config import IDX2OP, AGGS_ORDERED, NEW_TOKENS, SPECIAL_TOKENS
 
 
-def sql_engine(query: str, engine: Engine) -> str:
+def run_sql_query(query: str, engine: Engine) -> str:
     """
     Allows to perform SQL queries on a table. Returns a string representation of the result.
     Args:
