@@ -1,12 +1,13 @@
-from config import SQL_DB_PATH, DATA_PATH
-
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Engine
 import os
 import json
+from datasets import Dataset
 from datasets import Features, Value, Sequence, load_dataset
+from typing import Tuple, Union
+from config import SQL_DB_PATH, DATA_PATH
 
 
-def load_db_engines(sql_db_path: str = SQL_DB_PATH):
+def load_db_engines(sql_db_path: str = SQL_DB_PATH) -> Tuple[Engine, Engine, Engine]:
     print("\n\t Loading SQL database engines...")
     # ------- TRAIN --------
     train_db_path = os.path.join(sql_db_path, "train.db")
