@@ -9,7 +9,7 @@ def load_model_and_tokenizer(model_name: str):
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
     # For structured output purposes : Add new special tokens
-    specials = {"additional_special_tokens": list(NEW_TOKENS.values())}
+    specials = {"additional_special_tokens": list(NEW_TOKENS.values()) + ["<table>"]}
     tokenizer.add_special_tokens(specials)
 
     # Add tokens for operators ('<' is not in the tokenizer's vocab by default)

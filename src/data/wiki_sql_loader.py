@@ -6,7 +6,7 @@ from data.loader import load_dataset_from_json
 from sanitizer.sql_sanitizer import SQLSanitizer
 from utils import dict2query
 from data.process import Processor
-from config import DATA_PATH
+from config import DATA_PATH, ALLOWED_MODES
 
 
 class WikiSQLLoader:
@@ -17,22 +17,28 @@ class WikiSQLLoader:
         self.data_path = data_path
         self.sanitizer = SQLSanitizer()
         self.mode = mode
-        assert mode in ["human_readable_output", "structured_output"], "Invalid mode. Choose either 'human_readable_output' or 'structured_output'."
+        assert mode in ALLOWED_MODES, f"Invalid mode. Choose in {ALLOWED_MODES}."
         self.tokenizer = tokenizer
         self.with_samples = with_samples
         self.processor = Processor(tokenizer, mode=mode, with_samples=with_samples)
 
     def _check_existing_processed_data(self):
-        if os.path.exists(f"{self.data_path}/processed/wikisql_train_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}") and \
-           os.path.exists(f"{self.data_path}/processed/wikisql_val_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}") and \
-           os.path.exists(f"{self.data_path}/processed/wikisql_test_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}"):
+        if os.path.exists(
+                f"{self.data_path}/processed/wikisql_train_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}") and \
+                os.path.exists(
+                    f"{self.data_path}/processed/wikisql_val_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}") and \
+                os.path.exists(
+                    f"{self.data_path}/processed/wikisql_test_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}"):
             return True
         return False
 
     def _load_existing_processed_data(self):
-        train_data = load_from_disk(f"{self.data_path}/processed/wikisql_train_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
-        val_data = load_from_disk(f"{self.data_path}/processed/wikisql_val_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
-        test_data = load_from_disk(f"{self.data_path}/processed/wikisql_test_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
+        train_data = load_from_disk(
+            f"{self.data_path}/processed/wikisql_train_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
+        val_data = load_from_disk(
+            f"{self.data_path}/processed/wikisql_val_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
+        test_data = load_from_disk(
+            f"{self.data_path}/processed/wikisql_test_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
         return train_data, val_data, test_data
 
     def load_data(self):
@@ -49,17 +55,18 @@ class WikiSQLLoader:
 
         # Map valid SQL queries to the dataset "valid_sql" is a runnable SQL query
         print("Sanitizing 'train' GT SQL queries...")
-        train_data = train_data.map(lambda x: {
-            "valid_sql": self.sanitizer.sanitize(dict2query(x["table"]["id"], x["table"]["header"], x["sql"]),
-                                                 x["table"])})
+        valid_sql_func = lambda x: {
+            "valid_sql": dict2query(table_name="table_" + x["table"]["id"].replace("-", "_"),
+                                    headers=x["table"]["header"],
+                                    sql_dict=x["sql"],
+                                    types=x["table"]["types"])
+        }
+
+        train_data = train_data.map(valid_sql_func)
         print("Sanitizing 'val' GT SQL queries...")
-        val_data = val_data.map(lambda x: {
-            "valid_sql": self.sanitizer.sanitize(dict2query(x["table"]["id"], x["table"]["header"], x["sql"]),
-                                                 x["table"])})
+        val_data = val_data.map(valid_sql_func)
         print("Sanitizing 'test' GT SQL queries...")
-        test_data = test_data.map(lambda x: {
-            "valid_sql": self.sanitizer.sanitize(dict2query(x["table"]["id"], x["table"]["header"], x["sql"]),
-                                                 x["table"])})
+        test_data = test_data.map(valid_sql_func)
 
         # Tokenize input prompts + get attention masks for inputs and GT outputs
         print("Tokenizing 'train' data...")
@@ -71,12 +78,14 @@ class WikiSQLLoader:
 
         # Saving HF Dataset
         print("Saving processed datasets to disk...")
-        train_data.save_to_disk(f"{self.data_path}/processed/wikisql_train_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
-        val_data.save_to_disk(f"{self.data_path}/processed/wikisql_val_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
-        test_data.save_to_disk(f"{self.data_path}/processed/wikisql_test_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
+        train_data.save_to_disk(
+            f"{self.data_path}/processed/wikisql_train_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
+        val_data.save_to_disk(
+            f"{self.data_path}/processed/wikisql_val_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
+        test_data.save_to_disk(
+            f"{self.data_path}/processed/wikisql_test_{self.mode}_{'with_samples' if self.with_samples else 'no_samples'}")
 
         return train_data, val_data, test_data
-
 
 # if __name__ == '__main__':
 #     from src.config import Config

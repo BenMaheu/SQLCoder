@@ -34,6 +34,7 @@ if __name__ == '__main__':
             "id": t["table"].get("id", ""),
             "caption": t["table"].get("caption", ""),
             "header": t["table"].get("header", []),
+            "types": t["table"].get("types", []),
         }
         for t in test_data
     ]

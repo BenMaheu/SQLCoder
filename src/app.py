@@ -4,11 +4,8 @@ from pathlib import Path
 import streamlit as st
 import pandas as pd
 from model.text_to_sql import Text2SQL, Text2SQLConfig
-from data.wiki_sql_loader import WikiSQLLoader
 from data.loader import load_db_engines
 from utils import run_sql_query
-from config import DATA_PATH
-from sqlalchemy import create_engine
 
 
 # Loading model at init

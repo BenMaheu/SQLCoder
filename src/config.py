@@ -10,6 +10,9 @@ SPECIAL_TOKENS = {'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<pad>
 DATA_PATH = r"../data/dataset_files"
 SQL_DB_PATH = r"../data/db_files"
 
+# -------------- Processor PARAMS ----------------
+ALLOWED_MODES = ["structured_output", "human_readable_output", "runnable_output"]
+
 # -------------- TOKENIZER PARAMS ------------------
 COL_SEP = " | "  # Column separator in the input prompt
 SAMPLE_SEP = " ; "  # Samples separator in the input prompt

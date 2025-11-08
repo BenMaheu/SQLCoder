@@ -26,22 +26,36 @@ def quote_str(name: str) -> str:
 
 
 def quote_value(value: str) -> str:
-    """Quotes a value for SQL query"""
-    if value is None: return "NULL"
-    if value.replace(" ", "").isdigit(): return value.replace(" ", "")
-    return '"' + value.replace('"', '""') + '"'
+    if re.match(r'^-?\d+(\.\d+)?$', value.strip()):
+        # It's a number, leave as is
+        return value
+    else:
+        # It's a string, ensure double quotes
+        value = value.strip()
+        if not (value.startswith('"') and value.endswith('"')):
+            value = f'"{value}"'
+        return value
 
 
-def dict2query(table_id: str, headers: list, sql_dict: dict):
-    """Takes generated/GT sql_dict to parse it to a valid executable SQL query given table_id and headers"""
+def dict2query(table_name: str, headers: list, sql_dict: dict, types: list[str]) -> str:
+    """
+    Takes generated/GT sql_dict to parse it to a valid executable SQL query given table_id and headers
+
+    :param table_name: exact table_id to be used in the FROM clause
+    :param headers: list of headers/columns of the table
+    :param sql_dict: sql dictionary from WikiSQL
+    :param types: list of types of the columns
+    :return: correct/runnable SQL query string with correct quotes
+    :rtype:
+    """
     # Aggregate
     agg = AGGS_ORDERED[sql_dict.get("agg", 0)]
-    agg = agg + " " if agg is not None else ""
+    agg = agg + "(" if agg is not None else ""
 
     query = "SELECT " + agg + quote_str(headers[sql_dict["sel"]])
+    query = query + ")" if len(agg) > 0 else query
 
     # FROM
-    table_name = "table_" + table_id.replace("-", "_")
     query += " FROM " + table_name
 
     # Conditions
@@ -50,12 +64,15 @@ def dict2query(table_id: str, headers: list, sql_dict: dict):
     if n_conds > 0:
         query += " WHERE"
 
-    for i in range(n_conds):
-        col = quote_str(headers[conds["col"][i]])
-        op = IDX2OP[conds["op"][i]]
-        val = quote_value(conds["val"][i])
+    for idx_cond in range(n_conds):
+        col = quote_str(headers[conds["col"][idx_cond]])
+        op = IDX2OP[conds["op"][idx_cond]]
+        if types[conds["col"][idx_cond]] == "text":
+            val = '"' + conds["val"][idx_cond] + '"'
+        else:
+            val = conds["val"][idx_cond]
 
-        if i < n_conds - 1:
+        if idx_cond < n_conds - 1:
             query += f" {col} {op} {val} AND"
         else:
             query += f" {col} {op} {val}"
@@ -95,13 +112,24 @@ def strip_specials(text: str, special_tokens: dict = SPECIAL_TOKENS) -> str:
 
 
 def format_string(s: str) -> str:
-    """Replaces brackets and braces to special tokens"""
+    """Replaces brackets, braces and backtick to special tokens"""
     pattern = re.compile("|".join(map(re.escape, NEW_TOKENS)))
-    return pattern.sub(lambda m: NEW_TOKENS[m.group(0)], s)
+    s = pattern.sub(lambda m: NEW_TOKENS[m.group(0)], s)
+    return format_backtick(s)
+
+
+def format_backtick(s: str) -> str:
+    """Replaces backticks to special [backtick] token"""
+    s = re.sub(r'`', '[backtick]', s)
+    return s
 
 
 def unformat_string(s: str) -> str:
     """Replaces braces/brackets special tokens to brackets and braces"""
     REV_TOKENS = {v: k for k, v in NEW_TOKENS.items()}
     pattern = re.compile("|".join(map(re.escape, REV_TOKENS)))
-    return pattern.sub(lambda m: REV_TOKENS[m.group(0)], s)
+    s = pattern.sub(lambda m: REV_TOKENS[m.group(0)], s)
+
+    # Replacing backtick token to actual backtick
+    s = re.sub(r'\[backtick\]', '`', s)
+    return s

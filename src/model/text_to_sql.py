@@ -4,13 +4,14 @@ import torch
 from typing import List, Dict, Union, Tuple
 from tqdm import tqdm
 from dataclasses import dataclass
+import re
 
 from data.process import Processor
-from config import BATCH_SIZE, EPOCHS, GENERATION_MAX_LENGTH
+from config import BATCH_SIZE, EPOCHS, GENERATION_MAX_LENGTH, ALLOWED_MODES
 from model.utils import load_model_and_tokenizer, load_model_from_checkpoint
 from evaluation.metrics import compute_metrics, compute_human_readable_metrics
 from sanitizer.sql_sanitizer import SQLSanitizer
-from utils import run_sql_query, extract_json
+from utils import run_sql_query, extract_json, unformat_string, strip_specials
 
 
 @dataclass
@@ -94,6 +95,7 @@ class Text2SQLTrainer(Seq2SeqTrainer):
         super().__init__(*args, **kwargs)
 
     def evaluate_execution_accuracy(self, eval_dataset: Dataset, eval_db_engine, mode="human_readable_output"):
+        assert mode in ALLOWED_MODES, f"Invalid mode. Choose in {ALLOWED_MODES}."
         sanitizer = SQLSanitizer()
         execution_accuracy = 0
         invalid_san_queries = []  # Nb of queries generated that did not pass sanitizing
@@ -127,8 +129,15 @@ class Text2SQLTrainer(Seq2SeqTrainer):
                     if mode == "human_readable_output":
                         # Sanitize raw prediction
                         sanitized_query = sanitizer.sanitize(pred_sql, table)
-                    else:
+                    elif mode == "structured_output":
                         sanitized_query = sanitizer.sanitize(extract_json(pred_sql), table)
+                    elif mode == "runnable_output":
+                        # Replace <table> placeholder by the correct table id
+                        table_id = table["id"]
+                        table_id = "table_" + table_id.replace("-", "_")
+                        pred_sql = pred_sql.replace("<table>", table_id)
+                        pred_sql = re.sub("<table>", table_id, pred_sql)
+                        pred_sql = unformat_string(strip_specials(pred_sql))
                 except:
                     invalid_san_queries.append({"pred_sql": pred_sql})
                     continue
