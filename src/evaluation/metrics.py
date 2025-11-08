@@ -1,8 +1,10 @@
 import evaluate
+import random
 
 from utils import extract_json, strip_specials, unformat_string
 
 rouge = evaluate.load("rouge")
+
 
 def check_lf(pred, label):
     """Returns 0 if non logic form compliant 1 otherwise"""
@@ -87,7 +89,8 @@ def compute_metrics(pred, tokenizer):
     labels_str = tokenizer.batch_decode(labels, skip_special_tokens=False)
 
     # Print for process tracking
-    for i in range(3):
+    sample_preds_indices = random.sample(range(len(preds_str)), 3)
+    for i in sample_preds_indices:
         print("Raw pred : ", preds_str[i])
         print("Raw labels : ", labels_str[i])
         print("Clean pred : ", unformat_string(strip_specials(preds_str[i])))
@@ -155,7 +158,8 @@ def compute_human_readable_metrics(pred, tokenizer):
                                  references=labels_str)
 
     # Print for process tracking
-    for i in range(3):
+    sample_preds_indices = random.sample(range(len(preds_str)), 3)
+    for i in sample_preds_indices:
         print("Raw pred : ", preds_str[i])
         print("Raw labels : ", labels_str[i])
         print("Clean pred :   ", unformat_string(strip_specials(preds_str[i])))
