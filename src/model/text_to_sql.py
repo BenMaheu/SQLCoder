@@ -135,9 +135,9 @@ class Text2SQLTrainer(Seq2SeqTrainer):
                         # Replace <table> placeholder by the correct table id
                         table_id = table["id"]
                         table_id = "table_" + table_id.replace("-", "_")
-                        pred_sql = pred_sql.replace("<table>", table_id)
-                        pred_sql = re.sub("<table>", table_id, pred_sql)
-                        pred_sql = unformat_string(strip_specials(pred_sql))
+                        clean_pred_sql = pred_sql.replace("<table>", table_id)
+                        clean_pred_sql = re.sub("<table>", table_id, clean_pred_sql)
+                        sanitized_query = unformat_string(strip_specials(clean_pred_sql))
                 except:
                     invalid_san_queries.append({"pred_sql": pred_sql})
                     continue
