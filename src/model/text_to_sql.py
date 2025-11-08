@@ -165,6 +165,7 @@ class Text2SQLTrainer(Seq2SeqTrainer):
                     execution_accuracy += 1
 
         print("Execution accuracy : {:.2f}%".format(execution_accuracy / (1e-12 + total) * 100))
+        print("Number of invalid SQL queries : {:.2f}%".format(len(invalid_sql_queries)))
         return {
             "execution_accuracy": execution_accuracy / (1e-12 + total),
         }
