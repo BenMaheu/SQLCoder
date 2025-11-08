@@ -54,6 +54,7 @@ def plot_hists(data):
     operators = []
     aggs = []
     no_conds = []
+    types_list = []
 
     for example in tqdm(data):
         sql = example["sql"]
@@ -68,6 +69,7 @@ def plot_hists(data):
         table = example["table"]
         lengths.append(len(table["rows"]))
         headers.append(len(table["header"]))
+        types_list += types
 
     fig, axes = plt.subplots(2, 3, figsize=(15, 8))
     axes = axes.flatten()
@@ -101,6 +103,12 @@ def plot_hists(data):
     axes[4].set_title("Distribution of aggs")
     axes[4].set_xlabel("Agg")
     axes[4].set_ylabel("Frequency")
+
+    # Plot types histogram
+    axes[5].hist(types_list, bins=50, edgecolor='black')
+    axes[5].set_title("Distribution of types")
+    axes[5].set_xlabel("types")
+    axes[5].set_ylabel("Frequency")
 
     plt.tight_layout()
     plt.show()
