@@ -1,6 +1,6 @@
 from typing import Dict, List
 import json
-from config import COL_SEP, SAMPLE_SEP, MAX_INPUT_LENGTH, MAX_OUTPUT_LENGTH, ALLOWED_MODES
+from config import COL_SEP, SAMPLE_SEP, MAX_INPUT_LENGTH, MAX_OUTPUT_LENGTH, ALLOWED_MODES, IDX2OP, AGGS_STR_ORDERED
 from utils import format_string, dict2query, format_backtick
 
 
@@ -9,21 +9,20 @@ class Processor:
                  tokenizer,
                  mode: str = "human_readable_output",
                  with_samples: bool = False,
-                 with_type: bool = False,
                  column_sep: str = COL_SEP,
                  samples_sep: str = SAMPLE_SEP,
                  max_in_tokens=MAX_INPUT_LENGTH,
                  max_out_tokens=MAX_OUTPUT_LENGTH):
         self.tokenizer = tokenizer
+        assert mode in ALLOWED_MODES, f"Invalid mode. Choose in {ALLOWED_MODES}."
         self.mode = mode
         self.with_samples = with_samples
-        self.with_type = with_type
+        self.with_type = mode == "runnable_output"
         self.column_sep = column_sep
         self.samples_sep = samples_sep
         self.max_in_tokens = max_in_tokens
         self.max_out_tokens = max_out_tokens
         self.allowed_modes = ALLOWED_MODES
-        assert self.mode in self.allowed_modes
 
     def get_input_prompt(self, example):
         question, headers, types = example["question"], example["table"]["header"], example["table"]["types"]
@@ -93,7 +92,8 @@ def get_gt_structured_output(example):
     sel = example["sql"]["sel"]
     agg = example["sql"]["agg"]
     conds = example["sql"]["conds"]
-    return format_structured_output(sel, agg, conds)
+    headers = example["table"]["header"]
+    return format_structured_output(sel, agg, conds, headers)
 
 
 def get_gt_human_readable_output(example):
@@ -147,10 +147,21 @@ def format_input_with_type(question: str,
     return format_string(text)
 
 
-def format_structured_output(sel: list, agg: list, conds: Dict[str, List]) -> str:
+def format_structured_output(sel: int, agg: int, conds: Dict[str, List], headers: List[str]) -> str:
     """Formats the GT JSON output for training"""
+    # Turn sel, agg, conds into string for better understanding from the model
+    sel_str = headers[sel]
+    agg_str = AGGS_STR_ORDERED[agg]
+    conds_str = {"col": [], "op": [], "val": []}
+    for idx in range(len(conds["col"])):
+        col = headers[conds["col"][idx]]
+        op = IDX2OP[conds["op"][idx]]
+        val = conds["val"][idx]
+        conds_str["col"].append(col)
+        conds_str["op"].append(op)
+        conds_str["val"].append(val)
     return format_string(json.dumps({
-        "sel": sel,
-        "agg": agg,
-        "conds": conds
-    }, ensure_ascii=False))
+        "sel": sel_str,
+        "agg": agg_str,
+        "conds": conds_str
+    }, ensure_ascii = False))
