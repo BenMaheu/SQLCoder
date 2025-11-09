@@ -19,7 +19,7 @@ To run the Streamlit app, use the following command:
 ```
 streamlit run src/app.py
 ```
-![](/Users/ben/Desktop/SONOS/SQLCoder-challenge/src/assets/streamlit_app.gif)
+![](./assets/streamlit_app.gif)
 
 # Project architecture
 ```
@@ -123,7 +123,7 @@ The `op` indices correspond to the `OP2IDX` mapping.
 
 A short Exploratory Data Analysis on the distribution of the number of columns and rows per SQL table, the types of 
 each column, the number of operators, aggregate functions and number of conditions per SQL query helps us better understand our data.
-![](./src/assets/data_distrib.png)
+![](./assets/data_distrib.png)
 
 ---
 
@@ -412,6 +412,11 @@ Overall, the `runnable_output` method seems promising with FLAN-T5 small model a
 outperform the original Seq2SQL model's performances and even most bigger LLMs performances in few-shot approaches without fine-tuning
 (cf. [LLMSQL: Upgrading WikiSQL for the LLM Era of Text-to-SQL](https://arxiv.org/html/2510.02350v1) paper). However, 
 one should keep in mind that the evaluation dataset is not exactly the same as the original WikiSQL dataset or the one used in the LLMSQL paper.
+
+Moreover, I found that the `human_readable_output` method with SQLSanitizer post-processing also gives good results and could be a
+good alternative to the `runnable_output` method if one wants to have more control over the post-processing step.
+
+Finally, I think the whole post-processing step could be better thought out to ensure more robustness and better error handling.
 
 
 ## Future Work
