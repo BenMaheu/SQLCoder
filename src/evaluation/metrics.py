@@ -56,16 +56,16 @@ def slot_level_accuracy(preds, labels):
         if pred["agg"] == label["agg"]:
             correct_agg += 1
 
-        total_conds += len(pred["conds"]["col"])
+        # Condition-level accuracy (order-insensitive)
+        pred_conds = set(zip(pred["conds"]["col"], pred["conds"]["op"], pred["conds"]["val"]))
+        label_conds = set(zip(label["conds"]["col"], label["conds"]["op"], label["conds"]["val"]))
 
-        # TODO: review this to make it order-insensitive (sets)
-        for i in range(len(pred["conds"]["col"])):
-            if pred["conds"]["col"][i] == label["conds"]["col"][i]:
-                correct_cond_col += 1
-            if pred["conds"]["op"][i] == label["conds"]["op"][i]:
-                correct_cond_op += 1
-            if pred["conds"]["val"][i] == label["conds"]["val"][i]:
-                correct_cond_value += 1
+        total_conds += len(label_conds)
+        correct_conds = pred_conds & label_conds
+
+        correct_cond_col += len({c[0] for c in correct_conds})
+        correct_cond_op += len({c[1] for c in correct_conds})
+        correct_cond_value += len({c[2] for c in correct_conds})
 
     denom = total_conds + 1e-12
     return {
