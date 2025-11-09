@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-NEW_TOKENS = {"{": "<LBRACE>", "}": "<RBRACE>", "[": "<LBRACK>", "]": "<RBRACK>"}
+NEW_TOKENS = {"{": "[LBRACE]", "}": "[RBRACE]", "[": "[LBRACK]", "]": "[RBRACK]"}
 OP2IDX = {"=": 0, ">": 1, "<": 2}
 IDX2OP = {0: "=", 1: ">", 2: "<"}
 AGGS_STR_ORDERED = ["NULL", "MAX", "MIN", "COUNT", "SUM", "AVG"]

@@ -70,7 +70,9 @@ def dict2query(table_name: str, headers: list, sql_dict: dict, types: list[str])
         if types[conds["col"][idx_cond]] == "text":
             val = '"' + conds["val"][idx_cond] + '"'
         else:
-            val = conds["val"][idx_cond]
+            # Some number contain ","
+            cleaned = re.sub(r'[^\d.-]', '', conds["val"][idx_cond])  # keep digits, dot, minus
+            val = cleaned
 
         if idx_cond < n_conds - 1:
             query += f" {col} {op} {val} AND"
@@ -101,7 +103,7 @@ def extract_json(text: str, special_tokens: dict = SPECIAL_TOKENS) -> dict:
 
 def strip_specials(text: str, special_tokens: dict = SPECIAL_TOKENS) -> str:
     """
-    special tokens map :  {'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<pad>', 'additional_special_tokens': ['<LBRACE>', '<RBRACE>', '<LBRACK>', '<RBRACK>']}
+    special tokens map :  {'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<pad>', 'additional_special_tokens': ['[LBRACE]', '[RBRACE]', '[LBRACK]', '[RBRACK]']}
     additional_tokens will be stripped by format_string()
     """
     to_strip = {v for v in special_tokens.values() if isinstance(v, str)}

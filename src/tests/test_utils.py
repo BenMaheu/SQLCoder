@@ -24,7 +24,7 @@ class TestUtils(unittest.TestCase):
             "conds": {"col": [], "op": [], "val": []}
         }
         headers = ["id", "name"]
-        types = ["number", "text"]
+        types = ["real", "text"]
 
         query = dict2query("table_123", headers, sql_dict, types)
         self.assertEqual(query, "SELECT `name` FROM table_123")
@@ -40,7 +40,7 @@ class TestUtils(unittest.TestCase):
             }
         }
         headers = ["age", "name", "score"]
-        types = ["number", "text", "number"]
+        types = ["real", "text", "real"]
 
         query = dict2query("table_abc_xyz", headers, sql_dict, types)
 
@@ -54,13 +54,13 @@ class TestUtils(unittest.TestCase):
         sql_dict = {
             "agg": 4,  # SUM
             "sel": 0,
-            "conds": {"col": [0], "op": [2], "val": ["100"]}
+            "conds": {"col": [0], "op": [2], "val": ["1,000"]}
         }
         headers = ["amount"]
-        types = ["number"]
+        types = ["real"]
 
         query = dict2query("<table>", headers, sql_dict, types)
-        self.assertEqual(query, "SELECT SUM(`amount`) FROM <table> WHERE `amount` < 100")
+        self.assertEqual(query, "SELECT SUM(`amount`) FROM <table> WHERE `amount` < 1000")
 
     def test_strip_specials_removes_tokens(self):
         text = "Hello <pad> world </s> <unk>"
@@ -77,21 +77,21 @@ class TestUtils(unittest.TestCase):
 
     def test_format_string(self):
         s = "{key: [1, 2]}"
-        expected = "<LBRACE>key: <LBRACK>1, 2<RBRACK><RBRACE>"
+        expected = "[LBRACE]key: [LBRACK]1, 2[RBRACK][RBRACE]"
         self.assertEqual(format_string(s), expected)
 
     def test_unformat_string(self):
-        s = "<LBRACE>key: <LBRACK>1, 2<RBRACK><RBRACE>"
+        s = "[LBRACE]key: [LBRACK]1, 2[RBRACK][RBRACE]"
         expected = "{key: [1, 2]}"
         self.assertEqual(unformat_string(s), expected)
 
     def test_unformat_string_with_backtick(self):
-        s = "<LBRACE>[backtick]key[backtick]: 1<RBRACE>"
+        s = "[LBRACE][backtick]key[backtick]: 1[RBRACE]"
         expected = "{`key`: 1}"
         self.assertEqual(unformat_string(s), expected)
 
     def test_extract_json_with_specials_and_tokens(self):
-        text = "</s> <unk> <LBRACE>\"a\": 5<RBRACE> <pad>"
+        text = "</s> <unk> [LBRACE]\"a\": 5[RBRACE] <pad>"
         result = extract_json(text, special_tokens=SPECIAL_TOKENS)
         self.assertEqual(result, {"a": 5})
 
