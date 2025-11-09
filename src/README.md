@@ -19,12 +19,61 @@ To run the Streamlit app, use the following command:
 ```
 streamlit run src/app.py
 ```
+![](/Users/ben/Desktop/SONOS/SQLCoder-challenge/src/assets/streamlit_app.gif)
+
+# Project architecture
+```
+.
+├── README.md                 # Take-home assignment.
+├── data
+│   ├── dataset_files/        # Preprocessed WikiSQL dataset (train/val/test .jsonl)
+│   ├── db_files/             # SQLite database files for query execution
+│   └── test_schemas.pkl      # Pickled schemas for Streamlit demo (UI mode)
+└── src
+    ├── README.md             # Developer-focused documentation for src/ codebase
+    ├── app.py                # Streamlit web application for interactive Text2SQL inference
+    ├── assets/
+    │   ├── data_distrib.png  # Data distribution plot used in the README report
+    │   └── streamlit_app.gif # Animated demo of the Streamlit app
+    ├── config.py             # Global constants: aggregation ops, operator mappings, etc.
+    ├── data/
+    │   ├── eda.py            # Exploratory data analysis utilities (plotting distributions)
+    │   ├── loader.py         # Dataset loader (train/val/test split management)
+    │   ├── process.py        # Data preprocessing logic (prompt creation, normalization)
+    │   └── wiki_sql_loader.py# WikiSQL-specific dataset parser and transformer
+    ├── evaluation/
+    │   └── metrics.py        # Evaluation metrics
+    ├── extract_schemas.py    # Extracts DB schema metadata for each table (headers, types), for Streamlit app
+    ├── inference.py          # Inference example script using trained models
+    ├── model/
+    │   ├── text_to_sql.py    # Core seq2seq model class (Flan-T5 fine-tuning and inference)
+    │   └── utils.py          # Model utilities (load_model_and_tokenizer, load_model_from_checkpoint)
+    ├── models/               # Directory containing trained checkpoints and saved Hugging Face models
+    ├── poetry.lock           # Dependency lock file for Poetry
+    ├── pyproject.toml        # Poetry configuration (dependencies and project metadata)
+    ├── sanitizer/
+    │   ├── sql_sanitizer.py  # SQLSanitizer module
+    ├── SQLCoder.ipynb        # Jupyter notebook with whole pipeline from data loading to evaluation
+    ├── tests/
+    │   ├── test_processor.py # Unit tests for data preprocessing
+    │   ├── test_sql_sanitizer.py # Unit tests for SQLSanitizer logic
+    │   └── test_utils.py     # Tests for shared utility functions
+    ├── train.py              # Main training script for model fine-tuning
+    ├── train_base_hro_model  # Example command line script to train Flan-T5 base (human-readable output)
+    ├── train_small_hro_model # Example command line script to train Flan-T5 small (human-readable output)
+    └── utils.py              # General helper functions (text normalization, token stats, etc.)
+
+```
+
 
 # Project report
-Based on the WIKISQL dataset provided, the objective is to train a model capable of converting natural language queries into SQL queries. 
+
+## Introduction
+Based on the WikiSQL dataset provided, the objective is to train a model capable of converting natural language queries into SQL queries. 
 The dataset includes `human_readable` SQL queries that are logically correct but not immediately functional, requiring adjustments such as proper table names and value formatting (backticks, quotation marks...).
 
-The dataset also includes `types` that can help us to either include them in the input prompt or to post-process the output query (`real` values should be without any backtick or quotation mark, `text` values should be quoted).
+The dataset also includes `types` that can help us to either include them in the input prompt or to post-process the 
+output query (`real` values should be without any backtick or quotation mark, `text` values should be quoted).
 
 To tackle this problem, I thought of 3 different methods using the same base architecture (FLAN-T5):
 * Fine-tuning a seq2seq model to generate structured output that can be further used to reconstruct functional SQL queries. (`structured_output`)
@@ -33,21 +82,34 @@ To tackle this problem, I thought of 3 different methods using the same base arc
 
 For each of the 3 methods, we have trained a FLAN-T5 model using the HuggingFace transformers library.
 
-## Data
-We trained, validated and evaluated on the entire WikiSQL dataset provided in the `data/dataset_files/` folder.
 
-The distribution of samples is as follows:
+## Base Architecture
+
+All experiments were conducted using FLAN-T5 (small and base variants) from Hugging Face’s transformers library.
+Each model was fine-tuned for 5 epochs with:
+* `batch_size = 16`
+* `learning_rate = 5e-5`
+* Linear scheduler with`warmup_steps = 0`
+* Optimizer: `AdamW`
+* Trainer: `Seq2SeqTrainer`
+
+Training ran on a single NVIDIA T4 GPU (Google Colab).
+
+---
+
+## Data
+We trained, validated and evaluated on the entire WikiSQL dataset provided in the `data/dataset_files/` folder:
 ```
 Train size: 49190 | Val size: 8421 | Test size: 15878
 ```
 
-The dataset comes from WikiSQL and has the following hash maps : 
+Operator and aggregator mappings:
 ```
 OP2IDX = {"=": 0, ">": 1, "<": 2}
 IDX2OP = {0: "=", 1: ">", 2: "<"}
 AGGS_STR_ORDERED = ["NULL", "MAX", "MIN", "COUNT", "SUM", "AVG"]
 ```
-Then each observation in the dataset contains a `sql` dictionary with the following structure:
+Each observation in the dataset contains a `sql` dictionary with the following structure:
 ```python
 {'human_readable': 'SELECT Notes FROM table WHERE Current slogan = SOUTH AUSTRALIA',
  'sel': 5,
@@ -59,11 +121,11 @@ and `conds` contains lists of indices for columns, operators and values for each
 
 The `op` indices correspond to the `OP2IDX` mapping.
 
-
 A short Exploratory Data Analysis on the distribution of the number of columns and rows per SQL table, the types of 
 each column, the number of operators, aggregate functions and number of conditions per SQL query helps us better understand our data.
-![](/Users/ben/Desktop/SONOS/SQLCoder-challenge/src/assets/data_distrib.png)
+![](./src/assets/data_distrib.png)
 
+---
 
 ## Methods
 
@@ -110,6 +172,7 @@ Thus, ensuring that a model with a maximum input/output length of `128 tokens` s
 During our experiments we tried to replace `"|"` separator in the columns list with a special token column separator 
 that was added to the tokenizer but it led to worse results as the model struggled to identify column names correctly.
 
+---
 
 ### Structured output with post-processing
 In this method, the model is trained to generate a structured output from the same input prompt as the previous method.
@@ -148,6 +211,8 @@ Output Mean: 73.19, %-Output > 256: 0.00%, %-Output > 128: 0.04%, %-Output > 64:
 ```
 Thus, ensuring that a model with a maximum input/output length of `128 tokens` should be sufficient for most part of the examples for this task.
 
+---
+
 ### Runnable output
 In this method, the model is trained to generate runnable SQL queries directly from a slightly different input prompt than the previous methods.
 
@@ -175,33 +240,73 @@ Output Mean: 49.84, %-Output > 256: 0.00%, %-Output > 128: 0.01%, %-Output > 64:
 ```
 Thus, ensuring that a model with a maximum input/output length of `128 tokens` should be sufficient for most part of the examples for this task.
 
+---
+
+### SQLSanitizer
+The SQLSanitizer module ensures that raw SQL queries generated by the model are syntactically valid and executable against the WikiSQL databases.
+It performs post-processing operations such as quoting column names, correcting value formatting and resolving column match.
+For instance:
+```python
+from sql_sanitizer import SQLSanitizer
+sanitizer = SQLSanitizer()
+pred_sql = "SELECT Note FROM table WHERE Current slogan = SOUTH AUSTRALIA"
+sanitized_query = sanitizer.sanitize(pred_sql, table)
+
+# Output: SELECT `Notes` FROM table_2_12888640_1 WHERE `Current slogan` = "SOUTH AUSTRALIA";
+```
+
+#### a. Checks if `SELECT` is the first statement for safety
+The `sanitize()` method first checks if the generated query starts with a `SELECT` clause.
+
+#### b. Cleanup and Normalization
+* Removes custom special tokens (e.g. `[LBRACE]`, `[RBRACK]`) using utility functions `unformat_string()` and `strip_specials()`.
+* Trims trailing characters and enforces the query to start with a SELECT clause for safety.
+* Strips semicolons and re-adds them once the final query is clean.
+
+#### c. Column name quoting and string similarity
+The sanitizer uses `difflib.get_close_matches` to perform string similarity based on the Ratcliff-Obershelp algorithm.
+This algorithm is based on a score that computes the longest common subsequence between two strings.
+> One interesting lead for future work would be to try other string similarity algorithms such as Levenshtein distance (`fuzzywuzzy` library) 
+> which would count insertions, substitions and deletions.
+
+That way, the sanitizer allows tolerance for typos or slight naming differences between generated column names and
+actual table columns. (Implementing this led to a significant win in performance during evaluation)
+
+This step is handled by:
+* `best_match_column()`: finds the best matching column name from the table for a given generated column name.
+* `quote_select_column()`: ensures aggregates like COUNT, SUM, AVG are reconstructed correctly.
+
+#### d. WHERE Clause Sanitization
+The `sanitize_where_conditions()` method detects and formats condition triplets (column, operator, value) :
+* Recognizes valid operators (`=`, `<`, `>`)
+* Quotes string literals (unless numeric)
+* Preserves logical connectors (`AND`, `OR`)
+
+> This method could also use types from the table to ensure values are formatted correctly (quotation marks for text values, no quotes for real values...).
 
 
-## Training details
-Each model was trained on a single GPU T4 using Google Colab.
-The models were trained on 5 epochs with `batch_size=16`, `learning_rate=5e-5` and a linear scheduler with 
-`warmup_steps=0` and `AdamW` optimizer (using `Seq2SeqTrainer` from `transformers` library.
-
-## Evaluation
-For human_readable_output and runnable_output methods, the metric used for choosing best model was `rouge2` and for 
-structured_output method it was `logic_form_accuracy` (returns 1 if each field corresponds to the ground truth 
-target 0 otherwise). 
-
-Finally the evaluation was done using execution accuracy, as our task is to generate functional SQL queries that return the correct results when executed on the database.
-
-cf. [LLMSQL: Upgrading WikiSQL for the LLM Era of Text-to-SQL](https://arxiv.org/html/2510.02350v1) for comparison with LLMs (better than gpt-oss-20b in 0 and 1 shot in-context learning methods)
-
-
-With 74.03% Execution accuracy we beat the original Seq2SSQL model's evaluation from paper (still note that we did not evaluate on the same dataset)
+#### e. Table Name Replacement
+Replaces `table` placeholder with the real table identifier from dataset.
 
 ---
- |Model|Method | Execution accuracy| Exact Match accuracy|ROUGE2| Model path |
- |-----|-------|-------------------|---------------------|------------|---|
- |flan-t5-small| Human readable output |71.32%| **59.1%**|90.7% |`"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-human-readable-output-no-sample-3/"`|
- |flan-t5-small| Human readable output with col separators |70.66%| 58.3%| 70.3%|`"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-human-readable-output-no-sample-4/"`|
- |flan-t5-base| Human readable output |**78.6%**| 71.8%| 96.7%|`"/content/drive/MyDrive/SQLCoder/models/flan-t5-base-human-readable-output-no-sample/"`|
-|flan-t5-small| Runnable output |**74.03%**|58.7%|  95.7%|`"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-runnable-output-no-sample/"`|
-|flan-t5-small| Structured output |71.58%|X|  X|`"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-structured-output-no-sample/`|
+
+## Evaluation
+For human_readable_output and runnable_output methods, model selection relied on `rouge2`. 
+For structured_output method the main metric was `logic_form_accuracy` (exact field match).
+Final evaluation used execution accuracy, wether generated SQL returned the correct results.
+
+
+With 74.03% Execution accuracy (using `flan-t5-small` with runnable output generation) we beat the original Seq2SQL 
+model's evaluation from paper (still note that we did not evaluate on the same dataset)
+
+---
+|Model|Method | Execution accuracy| Exact Match accuracy| ROUGE2    | Model path |
+|-----|-------|-------------------|---------------------|-----------|---|
+|flan-t5-small| Human readable output |71.32%| **59.1%**| 90.7%     |`"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-human-readable-output-no-sample-3/"`|
+|flan-t5-small| Human readable output with col separators |70.66%| 58.3%|  70.3%    |`"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-human-readable-output-no-sample-4/"`|
+|flan-t5-base| Human readable output |**78.6%**| 71.8%| **96.7%** |`"/content/drive/MyDrive/SQLCoder/models/flan-t5-base-human-readable-output-no-sample/"`|
+|flan-t5-small| Runnable output |**74.03%**|58.7%| **95.7%** |`"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-runnable-output-no-sample/"`|
+|flan-t5-small| Structured output |71.58%|X|   X       |`"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-structured-output-no-sample/`|
 
 
 ---
@@ -292,5 +397,30 @@ Model saved at : `"/content/drive/MyDrive/SQLCoder/models/flan-t5-small-structur
 Detected 272 / 15878 (1.71 %) invalid prediction queries
  ```
 
- Note also that some asian characters are in the DB, thus needing to be in the tokenizer vocab, we could add these characters in our vocabulary.
- Furthermore maybe try upper/lower combinations for values in WHERE conditions when testing would make us win some performance points but would lead to additional computational time
+>Note that some asian characters are in the DB, thus needing to be in the tokenizer vocab, we could add these characters in our vocabulary.
+>Furthermore maybe try upper/lower combinations for values in WHERE conditions when testing would make us win some performance points but would lead to additional computational time.
+>Finally, using a code-specialized model such as CodeT5 or Codex could also help improve performance or reduce code complexity in pre and post-processing.
+
+## Discussions
+One of the main struggle I encountered during the project was dealing with the formats o columns and their values.
+Some columns are of type `real` but contain values with `,` as thousands separator (e.g. `1,234`). Others are "text" but contain numeric values.
+Finally most columns have names with special characters (commas, slashes, hyphens, parentheses...) that make it hard for the post-processing step. 
+That was one of the main reasons why I decided to use similarity search for columns when post-processing and also 
+why I tried to train a model that could generate directly runnable SQL queries from the table schema including types.
+
+Overall, the `runnable_output` method seems promising with FLAN-T5 small model as it manages to  
+outperform the original Seq2SQL model's performances and even most bigger LLMs performances in few-shot approaches without fine-tuning
+(cf. [LLMSQL: Upgrading WikiSQL for the LLM Era of Text-to-SQL](https://arxiv.org/html/2510.02350v1) paper). However, 
+one should keep in mind that the evaluation dataset is not exactly the same as the original WikiSQL dataset or the one used in the LLMSQL paper.
+
+
+## Future Work
+In future work, I would explore:
+* Add sample rows in the input prompt to give the model more context about the table data. 
+* Experimenting with code-specialized models like CodeT5 or Codex for potentially better SQL generation.
+* Experimenting with bigger models like FLAN-T5 base/large or XL to see if performance improves.
+* Enhancing the SQLSanitizer with more robust type handling and error correction.
+* Incorporating advanced string similarity algorithms (e.g., Levenshtein distance) for improved column matching and fine tune threshold.
+* Clean dataset from SQL queries that result in empty results to avoid confusing the model during training.
+* Include types in `sanitize_where_conditions()` method to ensure values are formatted correctly (quotation marks for text values, no quotes for real values...).
+* Give the user of the app the choice of model to use.
