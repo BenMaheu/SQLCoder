@@ -434,3 +434,4 @@ In future work, I would explore:
 * Incorporating advanced string similarity algorithms (e.g., Levenshtein distance) for improved column matching and fine tune threshold.
 * Clean dataset from SQL queries that result in empty results to avoid confusing the model during training.
 * Include types in `sanitize_where_conditions()` method to ensure values are formatted correctly (quotation marks for text values, no quotes for real values...).
+* Implement some data augmentations to balance aggregate functions and operators' representation
