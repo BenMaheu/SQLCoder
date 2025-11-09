@@ -21,6 +21,12 @@ streamlit run src/app.py
 ```
 ![](src/assets/streamlit_app.gif)
 
+# Run unit tests
+To run unit tests, use the following command from the `/src` directory:
+```
+python -m unittest discover
+```
+
 # Project architecture
 ```
 .
