@@ -1,6 +1,6 @@
 import unittest
 from utils import quote_str, quote_value, dict2query, strip_specials, format_backtick, format_string, unformat_string, \
-    extract_json
+    extract_json, strip_json_op
 from config import SPECIAL_TOKENS, NEW_TOKENS
 
 
@@ -104,6 +104,12 @@ class TestUtils(unittest.TestCase):
         text = "{invalid json}"
         with self.assertRaises(ValueError):
             extract_json(text)
+
+    def test_strip_json_op(self):
+        json_dict = {'sel': 2, 'conds': {'val': [0], 'op': [' > '], 'col': ['Pages']}}
+        expected = {'sel': 2, 'conds': {'val': [0], 'op': ['>'], 'col': ['Pages']}}
+        result = strip_json_op(json_dict)
+        self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':

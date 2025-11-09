@@ -101,6 +101,14 @@ def extract_json(text: str, special_tokens: dict = SPECIAL_TOKENS) -> dict:
         raise ValueError("JSON loading failed")
 
 
+def strip_json_op(json_dict: dict) -> dict:
+    """ Strips whitespace from each condition operator in the JSON dict (for structured output models)"""
+    n_conds = len(json_dict["conds"]["op"])
+    for i in range(n_conds):
+        json_dict["conds"]["op"][i] = json_dict["conds"]["op"][i].strip()
+    return json_dict
+
+
 def strip_specials(text: str, special_tokens: dict = SPECIAL_TOKENS) -> str:
     """
     special tokens map :  {'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<pad>', 'additional_special_tokens': ['[LBRACE]', '[RBRACE]', '[LBRACK]', '[RBRACK]']}
