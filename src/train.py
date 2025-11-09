@@ -45,9 +45,11 @@ def main():
     trainer.train()
 
     # Evaluate
+    print("Evaluating model...")
     trainer.evaluate(eval_dataset=test_data)
 
     # Evaluate execution accuracy
+    print("Evaluating execution accuracy...")
     train_db_engine, val_db_engine, test_db_engine = load_db_engines()
     trainer.evaluate_execution_accuracy(test_data, test_db_engine, mode=text2sql_model.mode)
 
