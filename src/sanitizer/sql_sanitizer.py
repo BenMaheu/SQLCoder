@@ -2,7 +2,7 @@ import re
 import difflib
 from typing import List
 from config import AGGS_STR_ORDERED, OP2IDX
-from utils import unformat_string, strip_specials
+from utils import unformat_string, strip_specials, quote_str
 
 
 class SQLSanitizer:
@@ -236,3 +236,47 @@ def is_already_sanitized(sql_query: str, table: dict) -> bool:
         return False
 
     return True
+
+
+def dictstr2query(dict_str: dict, table_name: str, types: list, headers: list):
+    """Takes sql dict with parsed string values instead of int values from WikiSQL and returns the SQL query"""
+    sel = dict_str["sel"]
+    sel = best_match_column(sel, headers, fuzzymatch_threshold=0.7)
+    agg = dict_str["agg"]
+    conds = dict_str["conds"]
+    if agg not in AGGS_STR_ORDERED or agg == "NULL":
+        agg = ""
+    else:
+        agg = agg + "("
+
+    query = "SELECT " + agg + quote_str(sel.strip())
+    query = query + ")" if len(agg) > 0 else query
+
+    # FROM
+    query += " FROM " + table_name
+
+    # WHERE
+    n_conds = len(conds["col"])
+    if n_conds > 0:
+        query += " WHERE"
+
+    for idx_cond in range(n_conds):
+        col = conds["col"][idx_cond].strip()
+        col = best_match_column(col, headers, fuzzymatch_threshold=0.7)
+        idx_col = headers.index(col)
+        col = quote_str(col)
+        op = conds["op"][idx_cond].strip()
+
+        if types[idx_col] == "text":
+            val = '"' + conds["val"][idx_cond] + '"'
+        else:
+            # Some number contain ","
+            cleaned = re.sub(r'[^\d.-]', '', conds["val"][idx_cond])  # keep digits, dot, minus
+            val = cleaned
+
+        if idx_cond < n_conds - 1:
+            query += f" {col} {op} {val} AND"
+        else:
+            query += f" {col} {op} {val}"
+
+    return query

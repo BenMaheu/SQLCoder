@@ -7,19 +7,25 @@ from model.text_to_sql import Text2SQL, Text2SQLConfig
 from data.loader import load_db_engines
 from utils import run_sql_query
 
+MODEL_OPTIONS = {
+    "human_readable_output": "./models/flan-t5-small-hro-no-sample",
+    "structured_output": "./models/flan-t5-small-structured-output-no-sample",
+    "runnable_output": "./models/flan-t5-small-runnable-output-no-sample",
+}
+
 
 # Loading model at init
 @st.cache_resource
-def load_model():
-    model_checkpoint = "./models/flan-t5-small-hro-no-sample"
+def load_model(model_mode: str):
+    model_checkpoint = MODEL_OPTIONS[model_mode]
     config = Text2SQLConfig(
         model_name="google/flan-t5-small",
         batch_size=16,
         num_train_epochs=5,
         generation_max_length=128,
         metric_for_best_model="rouge2",
-        mode="human_readable_output",
-        output_dir="./models/text2sql_hro_small"
+        mode=model_mode,
+        output_dir="./models/flan-t5-small-structured-output-no-sample"
     )
     model = Text2SQL(config)
     model.load_model_from_checkpoint(model_checkpoint=model_checkpoint)
@@ -36,20 +42,27 @@ def load_table_schemas():
     df["label"] = df.apply(
         lambda r: f"{r['id']} — {r['caption']}" if r["caption"] else r["id"], axis=1
     )
+
+    df = df.drop_duplicates(subset=["label"]).reset_index(drop=True)
     return df
 
 
 # Interface
 def main():
     st.title("SQLCoder Demo App")
-    st.write("Pose une question en langage naturel sur ta base de données et génère la requête SQL correspondante.")
+    st.write("Ask a natural language question on your database and generate the corresponding SQL query.")
+
+
+    selected_model_name = st.selectbox("Select a model:", list(MODEL_OPTIONS.keys()))
+    st.info(f"Currently using model: **{selected_model_name}**")
 
     # Load model and data
-    text2sql_model = load_model()
+    text2sql_model = load_model(selected_model_name)
     # Load table schemas
     df_tables = load_table_schemas()
     # Load SQL database engine
     _, _, test_db_engine = load_db_engines()  # à adapter à ton backend SQL
+
 
     # Table selection
     selected_label = st.selectbox("Select a table:", df_tables["label"])

@@ -10,8 +10,8 @@ from data.process import Processor
 from config import BATCH_SIZE, EPOCHS, GENERATION_MAX_LENGTH, ALLOWED_MODES
 from model.utils import load_model_and_tokenizer, load_model_from_checkpoint
 from evaluation.metrics import compute_metrics, compute_human_readable_metrics
-from sanitizer.sql_sanitizer import SQLSanitizer
-from utils import run_sql_query, extract_json, unformat_string, strip_specials
+from sanitizer.sql_sanitizer import SQLSanitizer, dictstr2query
+from utils import run_sql_query, extract_json, unformat_string, strip_specials, strip_json_op
 
 
 @dataclass
@@ -74,14 +74,30 @@ class Text2SQL:
             # Sanitizing prediction
             if self.mode == "structured_output":
                 try:
-                    sanitized_query = sanitizer.sanitize(extract_json(raw_pred_str), table, verbose=verbose)
+                    # Get table info
+                    table_id = table["id"]
+                    table_name = "table_" + table_id.replace("-", "_")
+                    types = table["types"]
+                    headers = table["header"]
+
+                    pred_dict = extract_json(raw_pred_str)
+                    print("blabla")
+                    pred_dict = strip_json_op(pred_dict)
+                    sanitized_query = dictstr2query(pred_dict, table_name, types, headers)
+                    print(sanitized_query)
                 except:
                     try:
-                        sanitized_query = extract_json(raw_pred_str)
+                        sanitized_query = strip_json_op(extract_json(raw_pred_str))
                     except:
                         sanitized_query = raw_pred_str
             else:
                 sanitized_query = sanitizer.sanitize(raw_pred_str, table, verbose=verbose)
+                if self.mode == "runnable_output":
+                    # Replace <table> placeholder by the correct table id
+                    table_id = table["id"]
+                    table_id = "table_" + table_id.replace("-", "_")
+                    sanitized_query = sanitized_query.replace("<table>", table_id)
+                    sanitized_query = re.sub("<table>", table_id, sanitized_query)
 
             sanitized_preds.append(sanitized_query)
             raw_preds.append(raw_pred_str)
