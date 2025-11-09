@@ -64,7 +64,7 @@ def slot_level_accuracy(preds, labels):
         correct_conds = pred_conds & label_conds
 
         correct_cond_col += len({c[0] for c in correct_conds})
-        correct_cond_op += len({c[1] for c in correct_conds})
+        correct_cond_op += len({c[1].strip() for c in correct_conds})
         correct_cond_value += len({c[2] for c in correct_conds})
 
     denom = total_conds + 1e-12
