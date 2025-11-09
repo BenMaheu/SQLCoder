@@ -19,7 +19,7 @@ To run the Streamlit app, use the following command:
 ```
 streamlit run src/app.py
 ```
-![](./assets/streamlit_app.gif)
+![](src/assets/streamlit_app.gif)
 
 # Project architecture
 ```
@@ -123,7 +123,7 @@ The `op` indices correspond to the `OP2IDX` mapping.
 
 A short Exploratory Data Analysis on the distribution of the number of columns and rows per SQL table, the types of 
 each column, the number of operators, aggregate functions and number of conditions per SQL query helps us better understand our data.
-![](./assets/data_distrib.png)
+![](src/assets/data_distrib.png)
 
 ---
 
