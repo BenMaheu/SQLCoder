@@ -1,5 +1,6 @@
 from typing import Dict, List
 import json
+import re
 from config import COL_SEP, SAMPLE_SEP, MAX_INPUT_LENGTH, MAX_OUTPUT_LENGTH, ALLOWED_MODES, IDX2OP, AGGS_STR_ORDERED
 from utils import format_string, dict2query, format_backtick
 
@@ -68,7 +69,7 @@ class Processor:
 
         # Output
         if self.mode == "structured_output":
-            example["target"] = get_gt_structured_output(example)
+            example["target"] = get_gt_structured_output(example, with_type=self.with_type)
         elif self.mode == "human_readable_output":
             example["target"] = get_gt_human_readable_output(example)
         elif self.mode == "runnable_output":
@@ -88,11 +89,14 @@ class Processor:
         pass
 
 
-def get_gt_structured_output(example):
+def get_gt_structured_output(example, with_type: bool = False):
     sel = example["sql"]["sel"]
     agg = example["sql"]["agg"]
     conds = example["sql"]["conds"]
     headers = example["table"]["header"]
+    types = example["table"]["types"]
+    if with_type:
+        return format_structured_output(sel, agg, conds, headers, types)
     return format_structured_output(sel, agg, conds, headers)
 
 
@@ -147,8 +151,12 @@ def format_input_with_type(question: str,
     return format_string(text)
 
 
-def format_structured_output(sel: int, agg: int, conds: Dict[str, List], headers: List[str]) -> str:
-    """Formats the GT JSON output for training"""
+def format_structured_output(sel: list, agg: list, conds: Dict[str, List], headers: List[str],
+                             types: List[str] = None) -> str:
+    """
+      Formats the GT JSON output for training
+      Returns : [LBRACE]"sel": "Notes", "agg": "NULL", "conds": [LBRACE]"col": [LBRACK]"Current slogan"[RBRACK], "op": [LBRACK]"="[RBRACK], "val": [LBRACK]"SOUTH AUSTRALIA"[RBRACK][RBRACE][RBRACE]
+    """
     # Turn sel, agg, conds into string for better understanding from the model
     sel_str = headers[sel]
     agg_str = AGGS_STR_ORDERED[agg]
@@ -157,6 +165,14 @@ def format_structured_output(sel: int, agg: int, conds: Dict[str, List], headers
         col = headers[conds["col"][idx]]
         op = IDX2OP[conds["op"][idx]]
         val = conds["val"][idx]
+        if types:
+            if types[conds["col"][idx]] == "text":
+                val = f'"{val}"'
+            else:
+                # Some number contain ","
+                cleaned = re.sub(r'[^\d.-]', '', val)  # keep digits, dot, minus
+                val = cleaned
+
         conds_str["col"].append(col)
         conds_str["op"].append(op)
         conds_str["val"].append(val)
@@ -164,4 +180,4 @@ def format_structured_output(sel: int, agg: int, conds: Dict[str, List], headers
         "sel": sel_str,
         "agg": agg_str,
         "conds": conds_str
-    }, ensure_ascii = False))
+    }, ensure_ascii=False))
