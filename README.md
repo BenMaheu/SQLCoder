@@ -434,5 +434,6 @@ In future work, I would explore:
 * Implement [TAPEX](https://arxiv.org/abs/2107.07653)
 * Incorporating advanced string similarity algorithms (e.g., Levenshtein distance) for improved column matching and fine tune threshold.
 * Clean dataset from SQL queries that result in empty results to avoid confusing the model during training.
+* Precompute SQL test results and evaluate only on non-empty results to have a better estimate of model performance.
 * Include types in `sanitize_where_conditions()` method to ensure values are formatted correctly (quotation marks for text values, no quotes for real values...).
 * Implement some data augmentations to balance aggregate functions and operators' representation
