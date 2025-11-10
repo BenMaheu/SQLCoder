@@ -431,6 +431,7 @@ In future work, I would explore:
 * Experimenting with code-specialized models like CodeT5 or Codex for potentially better SQL generation.
 * Experimenting with bigger models like FLAN-T5 base/large or XL to see if performance improves.
 * Enhancing the SQLSanitizer with more robust type handling and error correction.
+* Implement [TAPEX](https://arxiv.org/abs/2107.07653)
 * Incorporating advanced string similarity algorithms (e.g., Levenshtein distance) for improved column matching and fine tune threshold.
 * Clean dataset from SQL queries that result in empty results to avoid confusing the model during training.
 * Include types in `sanitize_where_conditions()` method to ensure values are formatted correctly (quotation marks for text values, no quotes for real values...).
