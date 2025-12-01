@@ -81,7 +81,6 @@ class Text2SQL:
                     headers = table["header"]
 
                     pred_dict = extract_json(raw_pred_str)
-                    print("blabla")
                     pred_dict = strip_json_op(pred_dict)
                     sanitized_query = dictstr2query(pred_dict, table_name, types, headers)
                     print(sanitized_query)
