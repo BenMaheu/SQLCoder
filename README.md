@@ -172,7 +172,7 @@ Using this method the distribution of length of tokens is as follows:
 Input Mean: 50.82, %-Input > 256: 0.00%,  %-Input > 128: 0.23%, %-Input > 64: 11.69%
 Output Mean: 21.47, %-Output > 256: 0.00%, %-Output > 128: 0.00%, %-Output > 64: 0.03%
 ```
-Thus, ensuring that a model with a maximum input/output length of `128 tokens` should be sufficient for most part of the examples for this task.
+Thus, ensuring that a model with a maximum input/output length of `256 tokens` should be sufficient for this task.
 
 
 During our experiments we tried to replace `"|"` separator in the columns list with a special token column separator 
@@ -215,7 +215,7 @@ Using this method the distribution of length of tokens is as follows:
 Input Mean: 50.82, %-Input > 256: 0.00%,  %-Input > 128: 0.23%, %-Input > 64: 11.69%
 Output Mean: 73.19, %-Output > 256: 0.00%, %-Output > 128: 0.04%, %-Output > 64: 89.71%
 ```
-Thus, ensuring that a model with a maximum input/output length of `128 tokens` should be sufficient for most part of the examples for this task.
+Thus, ensuring that a model with a maximum input/output length of `256 tokens` should be sufficient for this task.
 
 ---
 
@@ -244,7 +244,7 @@ Using this method the distribution of length of tokens is as follows:
 Input Mean: 64.61, %-Input > 256: 0.02%,  %-Input > 128: 0.69%, %-Input > 64: 41.26%
 Output Mean: 49.84, %-Output > 256: 0.00%, %-Output > 128: 0.01%, %-Output > 64: 12.43%
 ```
-Thus, ensuring that a model with a maximum input/output length of `128 tokens` should be sufficient for most part of the examples for this task.
+Thus, ensuring that a model with a maximum input/output length of `512 tokens` should be sufficient for this task.
 
 ---
 
