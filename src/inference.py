@@ -3,8 +3,6 @@ from data.wiki_sql_loader import WikiSQLLoader
 from config import DATA_PATH
 
 if __name__ == '__main__':
-    import os
-
     model_checkpoint = "./models/flan-t5-small-hro-no-sample"
     config = Text2SQLConfig(
         model_name="google/flan-t5-small",

@@ -61,7 +61,7 @@ def main():
     # Load table schemas
     df_tables = load_table_schemas()
     # Load SQL database engine
-    _, _, test_db_engine = load_db_engines()  # à adapter à ton backend SQL
+    _, _, test_db_engine = load_db_engines()
 
 
     # Table selection
@@ -91,7 +91,7 @@ def main():
         st.code(st.session_state["sql_query"], language="sql")
 
     if "sql_query" in st.session_state:
-        # Exécution de la requête
+        # Execute query
         if st.button("Run SQL query on db (test_sql_db)"):
             try:
                 results = run_sql_query(st.session_state["sql_query"], test_db_engine)

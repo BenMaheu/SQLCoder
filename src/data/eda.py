@@ -67,6 +67,7 @@ def plot_hists(data):
             operators.append(IDX2OP[conds["op"][j]])
 
         table = example["table"]
+        types = table["types"]
         lengths.append(len(table["rows"]))
         headers.append(len(table["header"]))
         types_list += types
